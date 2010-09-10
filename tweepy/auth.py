@@ -48,6 +48,7 @@ class OAuthHandler(AuthHandler):
         self.callback = callback
         self.username = None
         self.secure = secure
+        self.api = None
 
     def _get_oauth_url(self, endpoint, secure=False):
         if self.secure or secure:
@@ -153,7 +154,10 @@ class OAuthHandler(AuthHandler):
 
     def get_username(self):
         if self.username is None:
-            api = API(self)
+            if self.api:
+                api = self.api
+            else:
+                api = API(self)
             user = api.verify_credentials()
             if user:
                 self.username = user.screen_name
