@@ -69,7 +69,8 @@ class Stream(object):
     host = 'stream.twitter.com'
 
     def __init__(self, username, password, listener, timeout=5.0, retry_count = None,
-                    retry_time = 10.0, snooze_time = 5.0, buffer_size=1500, headers=None):
+                    retry_time = 10.0, snooze_time = 5.0, buffer_size=1500, headers=None,
+                 proxy_host=None,proxy_port=80):
         self.auth = BasicAuthHandler(username, password)
         self.running = False
         self.timeout = timeout
@@ -81,6 +82,8 @@ class Stream(object):
         self.api = API()
         self.headers = headers or {}
         self.body = None
+        self.proxy_host = proxy_host
+        self.proxy_port = proxy_port
 
     def _run(self):
         # setup
@@ -95,10 +98,16 @@ class Stream(object):
                 # quit if error count greater than retry count
                 break
             try:
-                conn = httplib.HTTPConnection(self.host)
+                if not self.proxy_host:
+                    conn = httplib.HTTPConnection(self.host)
+                else:
+                    conn = httplib.HTTPConnection(self.proxy_host, self.proxy_port)
                 conn.connect()
                 conn.sock.settimeout(self.timeout)
-                conn.request('POST', self.url, self.body, headers=self.headers)
+                _url=self.url
+                if self.proxy_host:
+                    _url="http://" + self.host + self.url
+                conn.request('POST', _url, self.body, headers=self.headers)
                 resp = conn.getresponse()
                 if resp.status != 200:
                     if self.listener.on_error(resp.status) is False:
